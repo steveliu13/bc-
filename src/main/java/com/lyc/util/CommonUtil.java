@@ -1,4 +1,4 @@
-package com.lyc;
+package com.lyc.util;
 
 import java.util.Random;
 

@@ -1,6 +1,8 @@
 package com.lyc;
 
-public interface 国密6个方法入口 {
+import com.lyc.bo.ByteKeyPair;
+
+public interface 国密常用方法入口 {
     /**
      * sm2加密
      * @param hexPublicKey hex公钥
@@ -49,4 +51,38 @@ public interface 国密6个方法入口 {
      * @return
      */
     public String Sm4Decrypt(String sm4Key, byte[] encBytes);
+
+    /**
+     * hex格式sm2公钥转pem
+     * @param hexPublicKey hex格式sm2公钥
+     * @return
+     */
+    public String hexSm2PublicKeyToPem(String hexPublicKey);
+
+    /**
+     * hex格式sm2私钥转pem
+     * @param hexPrivateKey hex格式sm2私钥
+     * @return
+     */
+    public String hexSm2PrivateKeyToPem(String hexPrivateKey);
+
+    /**
+     * pem格式sm2公钥转hex
+     * @param hexPublicKey pem格式sm2公钥
+     * @return
+     */
+    public String pemSm2PublicKeyToHex(String hexPublicKey);
+
+    /**
+     * pem格式sm2私钥转hex
+     * @param hexPrivateKey  pem格式sm2私钥
+     * @return
+     */
+    public String pemSm2PrivateKeyToHex(String hexPrivateKey);
+
+    /**
+     * 生成一对SM2公私钥
+     * @return ByteKeyPair，包含byte[] sm2PublicKeyBytes和byte[] sm2PrivateBytes
+     */
+    public ByteKeyPair generateSm2KeyPairs();
 }

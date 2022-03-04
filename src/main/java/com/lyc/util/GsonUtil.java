@@ -1,13 +1,32 @@
-package com.lyc;
+package com.lyc.util;
 
-import java.lang.reflect.Type;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+/**
+ * @author ：刘煜澄
+ * @date ：Created in 2022/1/13 3:29 PM
+ * @description：
+ */
+/**
+ * @Title: GsonUtil.java
+ * @Package com.unionpay.cqp.base.common.util
+ * @author Dason
+ * @date 2018年3月2日 上午10:37:52
+ * @version V1.0
+ */
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Type;
+
+/**
+ * @ClassName: GsonUtil
+ * @Description: Gson基础类 字符串转化json及json转换对象
+ * @author Dason
+ * @date 2018年3月2日 上午10:37:52
+ *
+ */
 public class GsonUtil {
 
     private static Logger logger = LoggerFactory.getLogger(GsonUtil.class);

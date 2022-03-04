@@ -1,9 +1,12 @@
 package com.lyc;
 
+import com.lyc.bo.ByteKeyPair;
+import com.lyc.util.SM2Util;
+import com.lyc.util.SM4Util;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 
-public class 国密6大方法实现 implements 国密6个方法入口{
+public class 国密常用方法实现 implements 国密常用方法入口 {
     @Override
     public byte[] Sm2Encrypt(String hexPublicKey, String plainText) {
         //生产bc公钥对象
@@ -72,4 +75,55 @@ public class 国密6大方法实现 implements 国密6个方法入口{
             return null;
         }
     }
+
+    @Override
+    public String hexSm2PublicKeyToPem(String hexPublicKey) {
+        try{
+            return SM2密钥转换.hex2PubPem(hexPublicKey);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public String hexSm2PrivateKeyToPem(String hexPrivateKey) {
+        try{
+            return SM2密钥转换.hex2PriPem(hexPrivateKey);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public String pemSm2PublicKeyToHex(String hexPublicKey) {
+        try{
+            return SM2密钥转换.pemPub2hex(hexPublicKey);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public String pemSm2PrivateKeyToHex(String hexPrivateKey) {
+        try{
+            return SM2密钥转换.pemPri2hex(hexPrivateKey);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public ByteKeyPair generateSm2KeyPairs() {
+        try{
+            ByteKeyPair byteKeyPair =  SM2Util.generateSm2Keys();
+            return byteKeyPair;
+        }catch (Exception e){
+            return null;
+        }
+    }
+
 }

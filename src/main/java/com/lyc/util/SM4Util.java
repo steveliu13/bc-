@@ -1,4 +1,4 @@
-package com.lyc;
+package com.lyc.util;
 
 import org.apache.commons.codec.binary.Base64;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -25,7 +25,7 @@ public class SM4Util {
         return sm4Key;
     }
 
-    protected static byte[] innerSM4Encrypt(byte[] src, byte[] key) throws Exception{
+    public static byte[] innerSM4Encrypt(byte[] src, byte[] key) throws Exception{
         byte[] dest = null;
         Cipher cipher = Cipher.getInstance(MODE_PARAM, PROV_NAME);
         Key sm4Key = generateSm4Key(key);
@@ -55,7 +55,7 @@ public class SM4Util {
      * @return
      * @throws Exception
      */
-    protected static byte[] innerSM4Decrypt(byte[] key,byte[] src) throws Exception{
+    public static byte[] innerSM4Decrypt(byte[] key, byte[] src) throws Exception{
         byte[] dest = null;
         Cipher cipher = Cipher.getInstance(MODE_PARAM, PROV_NAME);
         Key sm4Key = generateSm4Key(key);

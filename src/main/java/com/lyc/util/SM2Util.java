@@ -1,5 +1,8 @@
-package com.lyc;
+package com.lyc.util;
 
+import com.lyc.SM2密钥转换;
+import com.lyc.bo.ByteKeyPair;
+import org.apache.commons.codec.binary.Base64;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -25,9 +28,8 @@ import org.bouncycastle.util.encoders.Hex;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.*;
+import java.security.spec.ECGenParameterSpec;
 import java.util.*;
-
-import org.apache.commons.codec.binary.Base64;
 
 public class SM2Util {
     public static final int RS_LEN = 32;
@@ -52,13 +54,32 @@ public class SM2Util {
     }
 
     /**
+     * @param publicKeyRaw SM2十六进制公钥
+     * @param data         明文数据
+     * @return String 十六进制密文
+     * @Description 公钥加密
+          */
+    public static String SM2Encrypt(String publicKeyRaw, String data) throws Exception {
+        byte[] arrayOfBytes = innerSM2Encrypt(getECPublicKeyByPublicKeyHex(publicKeyRaw), data, 1);
+        //将加密后的字节串转换为十六进制字符串
+        return Hex.toHexString(arrayOfBytes);
+    }
+
+    public static String SM2EncryptByPemKey(String publicKeyRaw, String data) throws Exception {
+        BCECPublicKey bcecPublicKey = SM2密钥转换.pemPub2Bcec(publicKeyRaw);
+        byte[] arrayOfBytes = innerSM2Encrypt(bcecPublicKey, data, 1);
+        //将加密后的字节串转换为十六进制字符串
+        return Hex.toHexString(arrayOfBytes);
+    }
+
+    /**
      * @param publicKey SM2公钥
      * @param data      明文数据
      * @param modeType  加密模式
      * @return String
      * @Description 公钥加密
           */
-    protected static byte[] innerSM2Encrypt(BCECPublicKey publicKey, String data, int modeType) {
+    public static byte[] innerSM2Encrypt(BCECPublicKey publicKey, String data, int modeType) {
         //加密模式
         SM2Engine.Mode mode = SM2Engine.Mode.C1C3C2;
         if (modeType != 1) {
@@ -87,7 +108,17 @@ public class SM2Util {
         return arrayOfBytes;
     }
 
-
+    /**
+     * @param privateKeyRaw SM2十六进制私钥
+     * @param cipherData    base64密文数据
+     * @return String
+     * @Description 私钥解密
+          */
+    public static String SM2Decrypt(String privateKeyRaw, String cipherData) throws Exception {
+        byte[] encBytes = Base64.decodeBase64(cipherData);
+//        return new String(innerSM2Decrypt(Hex.decode(privateKeyRaw), encBytes));
+        return null;
+    }
 
     public static byte[] innerSM2Decrypt(BCECPrivateKey privateKey, byte[] cipherData, int modeType) throws Exception {
         //解密模式
@@ -132,7 +163,7 @@ public class SM2Util {
      * @return BCECPublicKey SM2公钥对象
      * @Description 公钥字符串转换为 BCECPublicKey 公钥对象
           */
-    protected static BCECPublicKey getECPublicKeyByPublicKeyHex(String pubKeyHex) {
+    public static BCECPublicKey getECPublicKeyByPublicKeyHex(String pubKeyHex) {
         //截取64字节有效的SM2公钥（如果公钥首个字节为0x04）
         if (pubKeyHex.length() > 128) {
             pubKeyHex = pubKeyHex.substring(pubKeyHex.length() - 128);
@@ -171,15 +202,40 @@ public class SM2Util {
      * @return
      * @throws Exception
      */
-    protected static byte[] signature(byte[] src, BCECPrivateKey sm2Key) throws Exception {
+    public static byte[] signature(byte[] src, BCECPrivateKey sm2Key) throws Exception {
         byte[] dest = null;
         Signature signature = Signature.getInstance(SIGNATURE_PARAM, PROV_NAME);
-        //"com.lyc"按实际修改
-        signature.setParameter(new SM2ParameterSpec("com.lyc".getBytes()));
+        signature.setParameter(new SM2ParameterSpec("unionpay".getBytes()));
         signature.initSign(sm2Key);
         signature.update(src);
         dest = signature.sign();
         return ans1ToRS(dest);
+    }
+
+    /**
+     * @param src
+     * @param privateKeyRaw
+     * @return
+     * @throws Exception
+     */
+    public static String sm2Sign(String src, String privateKeyRaw) throws Exception {
+        if (src.isEmpty() || privateKeyRaw == null || privateKeyRaw.length() == 0) {
+            throw new Exception("SM2Util_wrong signature input argument illegal!");
+        }
+        BCECPrivateKey sm2Key = getBCECPrivateKeyByPrivateKeyHex(privateKeyRaw);
+        byte[] signResult = signature(src.getBytes(), sm2Key);
+        return Base64.encodeBase64String(signResult);
+
+    }
+
+    public static String sm2SignByPemKey(String src, String privateKeyRaw) throws Exception {
+        if (src.isEmpty() || privateKeyRaw == null || privateKeyRaw.length() == 0) {
+            throw new Exception("SM2Util_wrong signature input argument illegal!");
+        }
+        BCECPrivateKey sm2Key = SM2密钥转换.pemPri2Bcec(privateKeyRaw);
+        byte[] signResult = signature(src.getBytes(), sm2Key);
+        return Base64.encodeBase64String(signResult);
+
     }
 
 
@@ -194,8 +250,7 @@ public class SM2Util {
         byte[] sign_asn1 = rsPlainByteArrayToAsn1(sign);
         boolean res;
         Signature signature = Signature.getInstance(SIGNATURE_PARAM, PROV_NAME);
-        //"com.lyc"按实际修改
-        signature.setParameter(new SM2ParameterSpec("com.lyc".getBytes()));
+        signature.setParameter(new SM2ParameterSpec("unionpay".getBytes()));
         signature.initVerify(sm2Key);
         signature.update(src);
         res = signature.verify(sign_asn1);
@@ -248,6 +303,136 @@ public class SM2Util {
             throw new RuntimeException("err rs: " + Hex.toHexString(rs));
         }
     }
+
+    private static ECPoint getEcPoint(byte[] publicKey) throws Exception {
+        ECPoint ecPoint = parameters.getCurve().decodePoint(publicKey);
+        return ecPoint;
+    }
+
+    public static String sortMapToSTring(Map<String, String> map) {
+        StringBuilder result = new StringBuilder();
+        Collection<String> keySet = map.keySet();
+        List<String> list = new ArrayList<String>(keySet);
+        Collections.sort(list);
+        for (int i = 0; i < list.size(); i++) {
+            result.append(list.get(i)).append("=").append(map.get(list.get(i))).append("&");
+        }
+        return result.substring(0, result.length() - 1);
+    }
+
+    public static byte[] encrypt(byte[] src, byte[] publicKey) throws Exception{
+        if (src == null || publicKey == null || src.length == 0) {
+            throw new Exception("SM2Util_wrong encrypt input argument illegal!");
+        }
+        byte[] dest = null;
+        SM2Engine sm2Engine = new SM2Engine();
+        ParametersWithRandom ecPubParam = getPublicParam(publicKey);
+        sm2Engine.init(true, ecPubParam);
+        try {
+            dest = sm2Engine.processBlock(src, 0, src.length);
+        } catch (InvalidCipherTextException e) {
+            throw new Exception("SM2Util_wrong encrypt input src invalid!", e);
+        }
+
+        return dest;
+    }
+
+    public static byte[] decrypt(byte[] src, byte[] privateKey) throws Exception {
+        if (src == null || privateKey == null || src.length == 0 || privateKey.length == 0) {
+            throw new Exception("SM2Util_wrong decrypt input argument illegal!");
+        }
+        byte[] dest = null;
+        ECPrivateKeyParameters ecPriParam = getPrivateParam(privateKey);
+        SM2Engine sm2Engine = new SM2Engine();
+        sm2Engine.init(false, ecPriParam);
+        try {
+            dest = sm2Engine.processBlock(src, 0, src.length);
+        } catch (InvalidCipherTextException e) {
+            throw new Exception("SM2Util_wrong decrypt input src invalid!", e);
+        }
+        return dest;
+    }
+
+    private static ParametersWithRandom getPublicParam(byte[] publicKey) throws Exception {
+        ECPoint ecPoint = getEcPoint(publicKey);
+        ECPublicKeyParameters ecPub = new ECPublicKeyParameters(ecPoint, ecDomainParameters);
+        ParametersWithRandom ecPubParam = new ParametersWithRandom(ecPub);
+        return ecPubParam;
+    }
+
+
+    private static KeyPair generateInnerSm2KeyPair() {
+        try {
+            final ECGenParameterSpec sm2Spec = new ECGenParameterSpec("sm2p256v1");
+            // 获取一个椭圆曲线类型的密钥对生成器
+            final KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
+            SecureRandom random = new SecureRandom();
+            // 使用SM2的算法区域初始化密钥生成器
+            kpg.initialize(sm2Spec, random);
+            // 获取密钥对
+            KeyPair keyPair = kpg.generateKeyPair();
+            return keyPair;
+        } catch (Exception e) {
+            System.out.println("generate sm2 key pair failed: "+ e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 生成byte[]格式sm2公私钥方法入口
+     * @return
+     */
+    public static ByteKeyPair generateSm2Keys(){
+        KeyPair sm2KeyPair = generateInnerSm2KeyPair();
+        BCECPrivateKey privateKey = (BCECPrivateKey) sm2KeyPair.getPrivate();
+        BCECPublicKey publicKey = (BCECPublicKey) sm2KeyPair.getPublic();
+        byte[]privateKeyBytes = privateKey.getD().toByteArray();
+        byte[] tempPrivateBytes = Arrays.copyOfRange(privateKeyBytes,0,privateKeyBytes.length);
+
+        ByteKeyPair result = new ByteKeyPair(publicKey.getQ().getEncoded(false), tempPrivateBytes);
+        return result;
+    }
+
+    public static void main(String[] args) throws Exception {
+//        String publicKeyHex = "048b9993b41ff3f31d2831d5d385e517d27128fac48406ac407431d9ef482c60cd0b93f15da70263b512877166cbbd99229a81d94d67c33fe01c5120833740f9a2";
+//        String privateKeyHex = "b43a4bd0fe76b1a623002bf285de60b015f44a282646dd647dae8bb79533b5da";
+//        KeyPair keyPair = createECKeyPair();
+//        PublicKey publicKey = keyPair.getPublic();
+//        if (publicKey instanceof BCECPublicKey) {
+//            //获取65字节非压缩缩的十六进制公钥串(0x04)
+//            publicKeyHex = Hex.toHexString(((BCECPublicKey) publicKey).getQ().getEncoded(false));
+//            System.out.println("---->SM2公钥：" + publicKeyHex);
+//        }
+//        PrivateKey privateKey = keyPair.getPrivate();
+//        if (privateKey instanceof BCECPrivateKey) {
+//            //获取32字节十六进制私钥串
+//            privateKeyHex = ((BCECPrivateKey) privateKey).getD().toString(16);
+//            System.out.println("---->SM2私钥：" + privateKeyHex);
+//        }
+//        String publicKeyPem = "-----BEGIN PUBLIC KEY-----MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAEw618p7dYFGbwN0y9TCWfK3/euXCUsAYMtppjKcnAbRa33+TQ+8h+51AhFBpKKmBNQpkAhO+YcK/VTtqI+TSsKw==-----END PUBLIC KEY-----";
+//        String privateKeyPem = "-----BEGIN EC PRIVATE KEY-----" +
+//                "MCUCAQEEICPBZLQHeFjSCaCQVTsYRCoqRBIFBqhEmwO1UhL+4qe1" +
+//                "-----END EC PRIVATE KEY-----";
+//        BCECPrivateKey privateKey = SM2pemPrivateKey2BCECKey(privateKeyPem);
+//        System.out.println(privateKey.getD());
+
+        /**
+         * 公钥加密
+         */
+//        String data = "=========待加密数据=========";
+
+        //将十六进制公钥串转换为 BCECPublicKey 公钥对象
+//        String encryptData = SM2Encrypt(publicKeyPem, data, "pem");
+//        System.out.println("---->加密结果：" + encryptData);
+//
+//        /**
+//         * 私钥解密
+//         */
+        //将十六进制私钥串转换为 BCECPrivateKey 私钥对象
+//        data = SM2Decrypt(privateKeyPem, encryptData,"pem");
+//        System.out.println("---->解密结果：" + data);
+    }
+
 
 }
 
