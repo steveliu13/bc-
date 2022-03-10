@@ -205,7 +205,7 @@ public class SM2Util {
     public static byte[] signature(byte[] src, BCECPrivateKey sm2Key) throws Exception {
         byte[] dest = null;
         Signature signature = Signature.getInstance(SIGNATURE_PARAM, PROV_NAME);
-        signature.setParameter(new SM2ParameterSpec("unionpay".getBytes()));
+        signature.setParameter(new SM2ParameterSpec("steveliu".getBytes()));
         signature.initSign(sm2Key);
         signature.update(src);
         dest = signature.sign();
@@ -250,7 +250,7 @@ public class SM2Util {
         byte[] sign_asn1 = rsPlainByteArrayToAsn1(sign);
         boolean res;
         Signature signature = Signature.getInstance(SIGNATURE_PARAM, PROV_NAME);
-        signature.setParameter(new SM2ParameterSpec("unionpay".getBytes()));
+        signature.setParameter(new SM2ParameterSpec("steveliu".getBytes()));
         signature.initVerify(sm2Key);
         signature.update(src);
         res = signature.verify(sign_asn1);
